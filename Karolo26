@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv Trading Bot</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Account Details Page -->
+        <div id="account-page" class="page">
+            <h1>Account Details</h1>
+            <label for="api-token">Deriv API Token:</label>
+            <input type="text" id="api-token" placeholder="Enter your API token">
+            <button onclick="saveAccountDetails()">Save and Continue</button>
+            <p id="account-error" class="error"></p>
+        </div>
+
+        <!-- Cashier Page -->
+        <div id="cashier-page" class="page" style="display: none;">
+            <h1>Cashier</h1>
+            <div class="cashier-options">
+                <button onclick="processTransaction('deposit', 'voucher')">Voucher Deposit</button>
+                <button onclick="processTransaction('deposit', 'bank')">Bank Deposit</button>
+                <button onclick="processTransaction('withdrawal', 'bank')">Bank Withdrawal</button>
+            </div>
+            <p id="cashier-status"></p>
+            <button onclick="navigateTo('markets-page')">Go to Markets</button>
+        </div>
+
+        <!-- Markets Trading Page -->
+        <div id="markets-page" class="page" style="display: none;">
+            <h1>Available Markets</h1>
+            <ul id="markets-list"></ul>
+            <button onclick="navigateTo('account-page')">Back to Account</button>
+        </div>
+
+        <!-- Timeframe Selection Page -->
+        <div id="timeframe-page" class="page" style="display: none;">
+            <h1 id="selected-market"></h1>
+            <ul id="timeframes-list">
+                <li onclick="selectTimeframe('1m')">1 Minute</li>
+                <li onclick="selectTimeframe('5m')">5 Minutes</li>
+                <li onclick="selectTimeframe('15m')">15 Minutes</li>
+                <li onclick="selectTimeframe('1h')">1 Hour</li>
+            </ul>
+            <button onclick="navigateTo('markets-page')">Back to Markets</button>
+        </div>
+
+        <!-- Bot Control Page -->
+        <div id="bot-control-page" class="page" style="display: none;">
+            <h1>Bot Control</h1>
+            <p>Account Balance: <span id="account-balance">0 USD</span></p>
+            <button id="start-bot" onclick="startBot()">Start Bot</button>
+            <button id="stop-bot" onclick="stopBot()" disabled>Stop Bot</button>
+            <p id="bot-status"></p>
+            <button onclick="navigateTo('markets-page')">Back to Markets</button>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
