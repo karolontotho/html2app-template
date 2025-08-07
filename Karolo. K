@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deriv Trading Bot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a1a;
+            color: #fff;
+        }
+        .container {
+            max-width: 600px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .page {
+            display: none;
+            background: #2a2a2a;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .page.active {
+            display: block;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #00ff00;
+        }
+        input, select, button {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border: none;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+        button {
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .error {
+            color: #ff4444;
+            text-align: center;
+            margin: 0.5rem 0;
+        }
+        .balance {
+            text-align: center;
+            font-size: 1.2rem;
+            margin: 1rem 0;
+        }
+        .market-list, .cashier-options {
+            list-style: none;
+            padding: 0;
+        }
+        .market-list li, .cashier-options li {
+            padding: 0.5rem;
+            background: #3a3a3a;
+            margin: 0.5rem 0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .market-list li:hover, .cashier-options li:hover {
+            background: #4a4a4a;
+        }
+        .trade-log {
+            max-height: 200px;
+            overflow-y: auto;
+            background: #1a1a1a;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Page 1: Account Details -->
+        <div id="page1" class="page active">
+            <h1>Deriv Trading Bot</h1>
+            <h2>Enter Account Details</h2>
+            <input type="text" id="apiToken" placeholder="Enter API Token (10-20 characters)" required>
+            <input type="text" id="accountId" placeholder="Enter Account ID" required>
+            <p class="error" id="errorMsg"></p>
+            <button onclick="validateAndProceed()">Login</button>
+        </div>
+
+        <!-- Page 2: Cashier -->
+        <div id="page2" class="page">
+            <h2>Cashier</h2>
+            <ul class="cashier-options">
+                <li onclick="showPaymentForm('1Voucher')">1Voucher</li>
+                <li onclick="showPaymentForm('Visa')">Visa</li>
+                <li onclick="showPaymentForm('Bank Transfer')">Bank Transfer</li>
+            </ul>
+            <div id="paymentForm" style="display: none;">
+                <h3 id="paymentTitle"></h3>
+                <input type="number" id="amount" placeholder="Enter amount" required>
+                <select id="transactionType">
+                    <option value="deposit">Deposit</option>
+                    <option value="withdrawal">Withdrawal</option>
+                </select>
+                <input type="text" id="paymentDetails" placeholder="Enter payment details (e.g., Voucher Code, Card Number)" required>
+                <p class="error" id="paymentError"></p>
+                <button onclick="processPayment()">Process</button>
+                <button onclick="backToCashier()">Back</button>
+            </div>
+            <button onclick="navigateTo('page3')">Go to Markets</button>
+        </div>
+
+        <!-- Page 3: Markets -->
+        <div id="page3" class="page">
+            <h2>Select Market</h2>
+            <ul class="market-list">
+                <li onclick="showMarketDetails('Volatility 10 (1s) Index', '24/7')">Volatility 10 (1s) Index</li>
+                <li onclick="showMarketDetails('Volatility 75 Index', '24/7')">Volatility 75 Index</li>
+                <li onclick="showMarketDetails('Forex (EUR/USD)', 'Mon-Fri, 00:00-23:59 GMT')">Forex (EUR/USD)</li>
+            </ul>
+            <div id="marketDetails" style="display: none;">
+                <h3 id="marketTitle"></h3>
+                <p id="marketHours"></p>
+                <button onclick="navigateTo('page4')">Trade This Market</button>
+                <button onclick="backToMarkets()">Back</button>
+            </div>
+            <button onclick="navigateTo('page2')">Back to Cashier</button>
+        </div>
+
+        <!-- Page 4: Trading -->
+        <div id="page4" class="page">
+            <h2>Trading Dashboard</h2>
+            <div class="balance" id="balance">Balance: $1000.00</div>
+            <button id="startBot" onclick="startTrading()">Start Bot</button>
+            <button id="stopBot" onclick="stopTrading()" disabled>Stop Bot</button>
+            <div class="trade-log" id="tradeLog"></div>
+            <button onclick="navigateTo('page3')">Back to Markets</button>
+        </div>
+    </div>
+
+    <script>
+        let balance = 1000; // Mock initial balance
+        let tradingInterval = null;
+        let selectedMarket = '';
+
+        // Navigation between pages
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+        }
+
+        // Validate account details
+        function validateAndProceed() {
+            const apiToken = document.getElementById('apiToken').value;
+            const accountId = document.getElementById('accountId').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            if (apiToken.length < 10 || apiToken.length > 20 || !/^[a-zA-Z0-9]+$/.test(apiToken)) {
+                errorMsg.textContent = 'API Token must be 10-20 alphanumeric characters.';
+                return;
+            }
+            if (!accountId) {
+                errorMsg.textContent = 'Account ID is required.';
+                return;
+            }
+
+            errorMsg.textContent = '';
+            navigateTo('page2');
+        }
+
+        // Show payment form
+        function showPaymentForm(method) {
+            document.querySelector('.cashier-options').style.display = 'none';
+            const paymentForm = document.getElementById('paymentForm');
+            paymentForm.style.display = 'block';
+            document.getElementById('paymentTitle').textContent = `${method} Transaction`;
+            document.getElementById('paymentDetails').placeholder = `Enter ${method} details`;
+        }
+
+        // Back to cashier options
+        function backToCashier() {
+            document.getElementById('paymentForm').style.display = 'none';
+            document.querySelector('.cashier-options').style.display = 'block';
+        }
+
+        // Process payment (mock)
+        function processPayment() {
+            const amount = parseFloat(document.getElementById('amount').value);
+            const transactionType = document.getElementById('transactionType').value;
+            const paymentDetails = document.getElementById('paymentDetails').value;
+            const paymentError = document.getElementById('paymentError');
+
+            if (!amount || amount <= 0) {
+                paymentError.textContent = 'Enter a valid amount.';
+                return;
+            }
+            if (!paymentDetails) {
+                paymentError.textContent = 'Payment details are required.';
+                return;
+            }
+
+            if (transactionType === 'withdrawal' && amount > balance) {
+                paymentError.textContent = 'Insufficient balance for withdrawal.';
+                return;
+            }
+
+            paymentError.textContent = '';
+            if (transactionType === 'deposit') {
+                balance += amount;
+            } else {
+                balance -= amount;
+            }
+            document.getElementById('balance').textContent = `Balance: $${balance.toFixed(2)}`;
+            alert(`${transactionType} of $${amount} processed successfully!`);
+            backToCashier();
+        }
+
+        // Show market details
+        function showMarketDetails(market, hours) {
+            selectedMarket = market;
+            document.querySelector('.market-list').style.display = 'none';
+            const marketDetails = document.getElementById('marketDetails');
+            marketDetails.style.display = 'block';
+            document.getElementById('marketTitle').textContent = market;
+            document.getElementById('marketHours').textContent = `Trading Hours: ${hours}`;
+        }
+
+        // Back to market list
+        function backToMarkets() {
+            document.getElementById('marketDetails').style.display = 'none';
+            document.querySelector('.market-list').style.display = 'block';
+        }
+
+        // Start trading (mock RSI + Martingale strategy)
+        function startTrading() {
+            if (!tradingInterval) {
+                document.getElementById('startBot').disabled = true;
+                document.getElementById('stopBot').disabled = false;
+                const tradeLog = document.getElementById('tradeLog');
+                tradeLog.innerHTML += `<p>Started trading on ${selectedMarket}...</p>`;
+
+                let stake = 0.35; // Initial stake
+                let martingaleFactor = 2.55;
+
+                tradingInterval = setInterval(() => {
+                    // Mock RSI calculation (random for simulation)
+                    const rsi = Math.random() * 100;
+                    const isWin = Math.random() > 0.5; // 50% win chance for simulation
+                    const profit = isWin ? stake * 0.95 : -stake; // 95% payout
+                    balance += profit;
+
+                    tradeLog.innerHTML += `<p>Trade: RSI=${rsi.toFixed(2)}, Stake=$${stake.toFixed(2)}, ${isWin ? 'Win' : 'Loss'}, Profit=$${profit.toFixed(2)}</p>`;
+                    document.getElementById('balance').textContent = `Balance: $${balance.toFixed(2)}`;
+                    tradeLog.scrollTop = tradeLog.scrollHeight;
+
+                    // Martingale: increase stake on loss, reset on win
+                    stake = isWin ? 0.35 : stake * martingaleFactor;
+                    if (stake > balance) stake = balance; // Cap stake at balance
+                }, 5000); // Trade every 5 seconds
+            }
+        }
+
+        // Stop trading
+        function stopTrading() {
+            if (tradingInterval) {
+                clearInterval(tradingInterval);
+                tradingInterval = null;
+                document.getElementById('startBot').disabled = false;
+                document.getElementById('stopBot').disabled = true;
+                document.getElementById('tradeLog').innerHTML += `<p>Trading stopped.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>
